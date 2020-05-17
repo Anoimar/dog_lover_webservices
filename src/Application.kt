@@ -23,6 +23,8 @@ fun Application.module(testing: Boolean = false) {
         this.root()
 
         this.getDogs()
+
+        this.uploadDogPic()
     }
 
 }

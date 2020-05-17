@@ -8,11 +8,11 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object DatabaseFactory {
 
     init {
-      //init database here
+      //initialize db connect
     }
 
     suspend fun <T> dbQuery(block: () -> T): T =
-        withContext(Dispatchers.IO) {
-            transaction { block() }
-        }
+            withContext(Dispatchers.IO) {
+                transaction { block() }
+            }
 }
