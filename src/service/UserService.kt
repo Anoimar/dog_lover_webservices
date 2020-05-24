@@ -5,10 +5,14 @@ import com.thernat.copyToSuspend
 import com.thernat.repository.DatabaseFactory.dbQuery
 import com.thernat.repository.dao.DogDao
 import com.thernat.repository.model.Dog
-import com.thernat.repository.table.Dogs
+import com.thernat.repository.model.User
+import com.thernat.repository.table.Users
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
-import io.ktor.client.request.forms.*
+import io.ktor.client.request.forms.InputProvider
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.parameter
 import io.ktor.client.request.url
 import io.ktor.http.HeadersBuilder
 import io.ktor.http.HttpHeaders
@@ -16,17 +20,24 @@ import io.ktor.http.content.MultiPartData
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
+import io.ktor.util.KtorExperimentalAPI
 import io.ktor.utils.io.streams.asInput
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.update
+import repository.insertOrUpdate
 import java.io.File
 
+class UserService {
 
-class DogService {
-    suspend fun getAllDogs(): List<Dog> = dbQuery {
-        DogDao.all().map { Dog(it) }
+    suspend fun getUserData(firebaseId: String) = dbQuery {
+        Users.select { Users.fireBaseId eq firebaseId }.map {
+            User(it[Users.fireBaseId], it[Users.picUrl])
+        }.first()
     }
 
-    suspend fun uploadDogPicture(multipart: MultiPartData): Boolean {
+    @KtorExperimentalAPI
+    suspend fun uploadUserAvatar(multipart: MultiPartData): Boolean {
         var uploader: String? = null
         var tempFile: File? = null
         multipart.forEachPart { part ->
@@ -38,8 +49,7 @@ class DogService {
                 }
                 is PartData.FileItem -> {
                     val ext = File(part.originalFileName).extension
-                    val uploadTime = System.currentTimeMillis()
-                    tempFile = File("${uploadTime}.$ext")
+                    tempFile = File("av.$ext")
                     part.streamProvider().use { input ->
                         tempFile?.outputStream()?.buffered().use { output ->
                             if (output != null) {
@@ -51,7 +61,7 @@ class DogService {
             }
             part.dispose()
         }
-        val uploaderId: Int = uploader?.toInt() ?: return false
+        val uploaderId: String = uploader ?: return false
 
         tempFile?.let {
             val fileName = "${uploaderId}_${it.name}"
@@ -66,17 +76,20 @@ class DogService {
                             { it.inputStream().asInput() },
                             headersBuilder.build()
                     )
+                    this.append("uploader",uploaderId)
                 }
-
                 val result = (client.submitFormWithBinaryData<String>(formData = parts) {
                     url("$WEB_HOST_BASE_URL/upload_image.php")
+
                 }.trim() == "true").also {
                     tempFile?.delete()
                 }
                 if (result) {
                     dbQuery {
-                        Dogs.update({ Dogs.id eq uploaderId }) { updateStatement ->
-                            updateStatement[picUrl] = "$WEB_HOST_BASE_URL/images/$fileName"
+
+                        Users.insertOrUpdate(Users.fireBaseId) { user ->
+                            user[fireBaseId] = uploaderId
+                            user[picUrl] = "$WEB_HOST_BASE_URL/images/$fileName"
                         }
                     }
                     return true
@@ -85,4 +98,5 @@ class DogService {
         }
         return false
     }
+
 }
