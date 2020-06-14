@@ -1,10 +1,7 @@
 package com.thernat.service
 
 import com.thernat.WEB_HOST_BASE_URL
-import com.thernat.copyToSuspend
 import com.thernat.repository.DatabaseFactory.dbQuery
-import com.thernat.repository.dao.DogDao
-import com.thernat.repository.model.Dog
 import com.thernat.repository.model.User
 import com.thernat.repository.table.Users
 import io.ktor.client.HttpClient
@@ -12,7 +9,6 @@ import io.ktor.client.engine.apache.Apache
 import io.ktor.client.request.forms.InputProvider
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.request.parameter
 import io.ktor.client.request.url
 import io.ktor.http.HeadersBuilder
 import io.ktor.http.HttpHeaders
@@ -22,11 +18,15 @@ import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
 import io.ktor.util.KtorExperimentalAPI
 import io.ktor.utils.io.streams.asInput
-import org.jetbrains.exposed.sql.insert
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.update
 import repository.insertOrUpdate
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 
 class UserService {
 
@@ -62,7 +62,6 @@ class UserService {
             part.dispose()
         }
         val uploaderId: String = uploader ?: return false
-
         tempFile?.let {
             val fileName = "${uploaderId}_${it.name}"
             HttpClient(Apache).use { client ->
@@ -99,4 +98,28 @@ class UserService {
         return false
     }
 
+}
+
+suspend fun InputStream.copyToSuspend(
+        out: OutputStream,
+        bufferSize: Int = DEFAULT_BUFFER_SIZE,
+        yieldSize: Int = 4 * 1024 * 1024,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO
+): Long {
+    return withContext(dispatcher) {
+        val buffer = ByteArray(bufferSize)
+        var bytesCopied = 0L
+        var bytesAfterYield = 0L
+        while (true) {
+            val bytes = read(buffer).takeIf { it >= 0 } ?: break
+            out.write(buffer, 0, bytes)
+            if (bytesAfterYield >= yieldSize) {
+                yield()
+                bytesAfterYield %= yieldSize
+            }
+            bytesCopied += bytes
+            bytesAfterYield += bytes
+        }
+        return@withContext bytesCopied
+    }
 }

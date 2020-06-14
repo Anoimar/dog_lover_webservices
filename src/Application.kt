@@ -25,10 +25,6 @@ fun Application.module(testing: Boolean = false) {
     routing {
         this.root()
 
-        this.getDogs()
-
-        this.uploadDogPic()
-
         this.uploadAvatar()
 
         this.getUserData()
