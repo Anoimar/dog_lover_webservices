@@ -4,6 +4,7 @@ import com.thernat.WEB_HOST_BASE_URL
 import com.thernat.repository.DatabaseFactory.dbQuery
 import com.thernat.repository.model.User
 import com.thernat.repository.table.Users
+import com.thernat.service.exception.UserNotFoundException
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
 import io.ktor.client.request.forms.InputProvider
@@ -33,7 +34,7 @@ class UserService {
     suspend fun getUserData(firebaseId: String) = dbQuery {
         Users.select { Users.fireBaseId eq firebaseId }.map {
             User(it[Users.fireBaseId], it[Users.picUrl])
-        }.first()
+        }.firstOrNull() ?: throw UserNotFoundException()
     }
 
     @KtorExperimentalAPI
@@ -88,7 +89,7 @@ class UserService {
 
                         Users.insertOrUpdate(Users.fireBaseId) { user ->
                             user[fireBaseId] = uploaderId
-                            user[picUrl] = "$WEB_HOST_BASE_URL/images/$fileName"
+                            user[picUrl] = "$WEB_HOST_BASE_URL/images/$uploaderId/$fileName"
                         }
                     }
                     return true
