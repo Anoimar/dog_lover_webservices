@@ -28,6 +28,12 @@ fun Application.module(testing: Boolean = false) {
         this.uploadAvatar()
 
         this.getUserData()
+
+        this.uploadDog()
+
+        this.getMyDogs()
+
+        this.deleteMyDog()
     }
 
 }

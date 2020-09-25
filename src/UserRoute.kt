@@ -16,7 +16,7 @@ val userService = UserService()
 
 
 fun Routing.uploadAvatar() {
-    post("/upload_avatar") {
+    post("/upload-avatar") {
         call.respond(userService.uploadUserAvatar(call.receiveMultipart()))
     }
 }

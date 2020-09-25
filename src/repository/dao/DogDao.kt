@@ -9,9 +9,11 @@ class DogDao(id: EntityID<Int>) : IntEntity(id) {
  companion object : IntEntityClass<DogDao>(Dogs)
 
  var dogId by Dogs.id
- var name by Dogs.name
+ var name by Dogs.picName
  var owner by Dogs.owner
  var breed by Dogs.breed
  var sex by Dogs.sex
  var picUrl by Dogs.picUrl
+ var description by Dogs.description
+ var verified by Dogs.verified
 }
