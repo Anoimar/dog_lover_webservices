@@ -33,6 +33,21 @@ fun Routing.getMyDogs() {
     }
 }
 
+fun Routing.getOtherDogs() {
+    get("/other-dogs"){
+        try {
+            call.request.queryParameters["userId"]?.let {
+                call.respond(dogService.getOtherDogs(it))
+            } ?: call.respond(HttpStatusCode.BadRequest,"Missing param")
+        } catch (e: UserNotFoundException) {
+            call.respond(HttpStatusCode.NotFound,"User doesn't exist")
+        } catch (e: Exception) {
+            call.respond(HttpStatusCode.InternalServerError, e)
+        }
+    }
+}
+
+
 fun Routing.deleteMyDog() {
     get("/my-dogs-delete") {
         try {

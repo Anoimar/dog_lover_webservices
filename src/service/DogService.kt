@@ -15,10 +15,7 @@ import io.ktor.http.content.forEachPart
 import io.ktor.http.content.streamProvider
 import io.ktor.util.KtorExperimentalAPI
 import io.ktor.utils.io.streams.*
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.*
 import java.io.File
 
 
@@ -26,9 +23,17 @@ class DogService {
 
     suspend fun getMyDogs(firebaseId: String) = dbQuery {
         Dogs.select { Dogs.owner eq firebaseId }.map {
-           it.toDog()
+            it.toDog()
         }
     }
+
+    suspend fun getOtherDogs(firebaseId: String) = dbQuery {
+        Dogs.select { Dogs.owner neq firebaseId }
+                .andWhere { Dogs.verified eq true }.map {
+                    it.toDog()
+                }
+    }
+
 
     suspend fun deleteDog(firebaseId: String, dogId: Int): Boolean {
         val dogPicUrl = dbQuery {

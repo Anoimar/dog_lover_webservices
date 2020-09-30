@@ -33,6 +33,8 @@ fun Application.module(testing: Boolean = false) {
 
         this.getMyDogs()
 
+        this.getOtherDogs()
+
         this.deleteMyDog()
     }
 
