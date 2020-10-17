@@ -21,7 +21,6 @@ fun Application.module(testing: Boolean = false) {
     }
     install(StatusPages)
 
-
     routing {
         this.root()
 
@@ -36,6 +35,8 @@ fun Application.module(testing: Boolean = false) {
         this.getOtherDogs()
 
         this.deleteMyDog()
+
+        this.updateDog()
     }
 
 }
