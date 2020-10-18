@@ -31,7 +31,7 @@ class DogService {
         Dogs.update({
             Dogs.owner eq firebaseId and
                     (Dogs.id eq dog.dogId)
-        }){
+        }) {
             it[picName] = dog.name.orEmpty()
             it[description] = dog.description
             it[breed] = dog.breed
@@ -46,17 +46,21 @@ class DogService {
     }
 
     suspend fun deleteDog(firebaseId: String, dogId: Int): Boolean {
-        val dogPicUrl = dbQuery {
+        val dogData = dbQuery {
             Dogs.select { Dogs.id eq dogId }
                     .map {
-                        it[Dogs.picUrl]
-                    }.first().substringAfterLast("/")
+                        Pair(it[Dogs.owner], it[Dogs.picUrl].substringAfterLast("/")
+                        )
+                    }.first()
+        }
+        if (firebaseId != dogData.first) {
+            return false
         }
         val client = HttpClient()
         client.use {
             val response: String = it.get("$WEB_HOST_BASE_URL/delete_dog_pic.php") {
                 parameter("uploader_id", firebaseId)
-                parameter("dog_pic_url", dogPicUrl)
+                parameter("dog_pic_url", dogData.second)
             }
             print(response)
         }
